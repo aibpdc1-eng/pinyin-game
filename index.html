@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拼音小达人 - 儿童拼音打字游戏</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes bounceIn { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+@keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes rainbow { 0% { color: #ff6b6b; } 20% { color: #ffa502; } 40% { color: #2ed573; } 60% { color: #1e90ff; } 80% { color: #a55eea; } 100% { color: #ff6b6b; } }
+@keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+@keyframes confetti-fall { 0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+@keyframes cloudMove { 0% { transform: translateX(-200px); } 100% { transform: translateX(calc(100vw + 200px)); } }
+@keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@keyframes timerFlash { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+body {
+  font-family: 'Comic Sans MS', 'Chalkboard SE', 'Arial Rounded MT Bold', sans-serif;
+  min-height: 100vh; overflow-x: hidden;
+  background: linear-gradient(180deg, #87CEEB 0%, #B0E0FF 30%, #98FB98 70%, #90EE90 100%);
+  position: relative;
+}
+
+.scene-bg {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 0; overflow: hidden;
+}
+.cloud {
+  position: absolute; background: white; border-radius: 50px;
+  opacity: 0.7; animation: cloudMove linear infinite;
+}
+.cloud::before, .cloud::after { content: ''; position: absolute; background: white; border-radius: 50%; }
+.cloud:nth-child(1) { width: 100px; height: 32px; top: 5%; animation-duration: 28s; }
+.cloud:nth-child(1)::before { width: 40px; height: 40px; top: -20px; left: 18px; }
+.cloud:nth-child(1)::after { width: 28px; height: 28px; top: -12px; left: 50px; }
+.cloud:nth-child(2) { width: 80px; height: 28px; top: 12%; animation-duration: 36s; animation-delay: -12s; }
+.cloud:nth-child(2)::before { width: 35px; height: 35px; top: -16px; left: 12px; }
+.cloud:nth-child(2)::after { width: 24px; height: 24px; top: -10px; left: 42px; }
+.sun {
+  position: absolute; top: 15px; right: 40px;
+  width: 60px; height: 60px; background: #FFD700;
+  border-radius: 50%; box-shadow: 0 0 30px #FFD700, 0 0 60px rgba(255,215,0,0.3);
+  animation: float 4s ease-in-out infinite;
+}
+.sun::after { content: '😊'; position: absolute; font-size: 30px; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+.ground {
+  position: absolute; bottom: 0; width: 100%; height: 18%;
+  background: linear-gradient(180deg, #7CCD7C 0%, #5EAE5E 100%);
+  border-radius: 50% 50% 0 0 / 15px 15px 0 0;
+}
+.flower { position: absolute; bottom: 15%; font-size: 22px; animation: float 3s ease-in-out infinite; }
+.tree { position: absolute; bottom: 16%; font-size: 44px; }
+.butterfly { position: absolute; font-size: 18px; animation: float 2s ease-in-out infinite; }
+
+.container {
+  position: relative; z-index: 1;
+  max-width: 1060px; margin: 0 auto; padding: 10px 20px;
+}
+
+.game-header { text-align: center; padding: 8px 0; }
+.game-title {
+  font-size: 2.6em; font-weight: 900;
+  animation: rainbow 3s linear infinite;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+  line-height: 1.2;
+}
+.game-subtitle { font-size: 1.05em; color: #555; }
+
+.top-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; margin: 6px 0; flex-wrap: wrap;
+}
+.stats-bar {
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+}
+.stat-item {
+  background: rgba(255,255,255,0.85); border-radius: 16px;
+  padding: 6px 16px; font-size: 1em; font-weight: bold;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  display: flex; align-items: center; gap: 5px;
+  white-space: nowrap;
+}
+.timer-display {
+  background: rgba(255,255,255,0.9); border-radius: 16px;
+  padding: 6px 16px; font-size: 1em; font-weight: bold;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  display: flex; align-items: center; gap: 5px;
+  white-space: nowrap; color: #555;
+}
+.timer-display.warning {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  color: white; animation: pulse 0.6s ease infinite;
+}
+
+.category-bar {
+  display: flex; justify-content: center; gap: 6px;
+  margin: 6px 0; flex-wrap: wrap;
+}
+.cat-btn {
+  border: none; border-radius: 22px; padding: 8px 18px;
+  font-size: 0.95em; font-weight: bold; cursor: pointer;
+  transition: all 0.3s; font-family: inherit;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+.cat-btn:hover { transform: translateY(-1px); }
+.cat-btn.active { transform: scale(1.04); box-shadow: 0 3px 14px rgba(0,0,0,0.18); }
+
+.progress-track {
+  width: 100%; height: 8px; background: rgba(255,255,255,0.5);
+  border-radius: 4px; margin: 4px 0; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, #6c5ce7, #a55eea, #ff6b6b, #ffa502, #2ed573);
+  background-size: 200%; transition: width 0.5s ease;
+}
+
+.game-card {
+  background: rgba(255,255,255,0.92); border-radius: 24px;
+  padding: 22px 28px; margin: 8px 0;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+  backdrop-filter: blur(10px);
+  animation: slideUp 0.4s ease-out;
+  border: 2px solid rgba(255,255,255,0.7);
+}
+
+.main-content {
+  display: flex; gap: 24px; align-items: flex-start;
+}
+.scene-side {
+  flex: 0 0 auto; text-align: center;
+}
+.scene-container {
+  border-radius: 20px; padding: 18px 26px; display: inline-block;
+  min-width: 170px; box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+}
+.scene-emoji {
+  font-size: 72px; display: block;
+  animation: bounceIn 0.5s ease-out, float 3s ease-in-out infinite;
+  line-height: 1.1;
+}
+.scene-label { margin-top: 6px; font-size: 0.85em; color: rgba(255,255,255,0.85); }
+
+.word-side { flex: 1; min-width: 0; }
+
+.word-row {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.chinese-word {
+  font-size: 3.2em; font-weight: 900; color: #333;
+  letter-spacing: 8px; text-shadow: 1px 1px 0 rgba(0,0,0,0.05);
+  line-height: 1.2;
+}
+.pinyin-hint {
+  font-size: 1.4em; color: #e17055; font-weight: bold;
+  letter-spacing: 2px;
+}
+.sound-btn-inline {
+  border: none; border-radius: 50%; width: 36px; height: 36px;
+  font-size: 18px; cursor: pointer; transition: all 0.2s;
+  display: inline-flex; align-items: center; justify-content: center;
+  flex-shrink: 0; line-height: 1;
+}
+.sound-btn-inline:hover { transform: scale(1.15); }
+.sound-btn-inline:active { transform: scale(0.9); }
+.sound-btn-inline.cn-btn { background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: white; }
+.sound-btn-inline.en-btn { background: linear-gradient(135deg, #1e90ff, #3742fa); color: white; }
+.sound-btn-inline.speaking { animation: pop 0.3s ease; }
+
+.en-row {
+  display: flex; align-items: center; gap: 6px;
+  margin: 2px 0;
+}
+.english-trans {
+  font-size: 1.15em; color: #636e72; font-style: italic;
+}
+
+.sentence-box {
+  margin: 8px 0; padding: 10px 14px;
+  background: rgba(108,92,231,0.06); border-radius: 12px;
+  font-size: 1.05em; line-height: 1.5;
+}
+.sentence-cn { color: #6c5ce7; font-weight: 600; }
+.sentence-en-row {
+  display: flex; align-items: center; gap: 8px; margin-top: 3px;
+}
+.sentence-en { color: #888; font-size: 0.95em; font-style: italic; line-height: 1.6; }
+.word-clickable {
+  cursor: pointer; border-bottom: 2px dashed rgba(30,144,255,0.4);
+  padding: 0 1px; border-radius: 2px; transition: all 0.2s;
+  display: inline-block;
+}
+.word-clickable:hover {
+  background: rgba(30,144,255,0.12); border-bottom-color: #1e90ff;
+  transform: scale(1.05);
+}
+.word-clickable:active { transform: scale(0.95); }
+.word-clickable.speaking-word {
+  background: rgba(30,144,255,0.2); border-bottom-color: #1e90ff;
+  color: #1e90ff;
+}
+.speak-mini {
+  border: none; cursor: pointer; font-size: 13px; padding: 3px 8px;
+  line-height: 1; transition: all 0.2s; flex-shrink: 0;
+  border-radius: 10px; font-family: inherit; font-weight: bold;
+  background: rgba(30,144,255,0.12); color: #1e90ff;
+}
+.speak-mini:hover { background: rgba(30,144,255,0.25); transform: scale(1.06); }
+.speak-mini.active-speed {
+  background: linear-gradient(135deg, #1e90ff, #3742fa);
+  color: white;
+}
+
+.char-slots {
+  display: flex; gap: 6px; margin: 6px 0; flex-wrap: wrap;
+}
+.char-slot {
+  width: 48px; height: 48px; border: 2px dashed #ddd;
+  border-radius: 12px; display: flex; align-items: center;
+  justify-content: center; font-size: 1.25em; font-weight: bold;
+  background: rgba(255,255,255,0.5); transition: all 0.3s; color: #6c5ce7;
+}
+.char-slot.filled { border-style: solid; border-color: #6c5ce7; background: rgba(108,92,231,0.08); }
+.char-slot.correct-char { border-color: #2ed573; background: rgba(46,213,115,0.1); color: #2ed573; }
+.char-slot.wrong-char { border-color: #ff4757; background: rgba(255,71,87,0.08); color: #ff4757; }
+
+.input-row {
+  display: flex; align-items: center; gap: 10px; margin: 10px 0; flex-wrap: wrap;
+}
+.input-row label {
+  font-size: 1.05em; font-weight: bold; color: #555; white-space: nowrap;
+}
+.pinyin-input {
+  font-size: 1.6em; padding: 10px 20px;
+  border: 3px solid #dfe6e9; border-radius: 16px;
+  text-align: center; flex: 1; min-width: 200px;
+  font-family: inherit; outline: none;
+  transition: all 0.3s; background: rgba(255,255,255,0.9);
+}
+.pinyin-input:focus { border-color: #6c5ce7; box-shadow: 0 0 0 3px rgba(108,92,231,0.12); }
+.pinyin-input.correct { border-color: #2ed573; background: rgba(46,213,115,0.08); animation: pop 0.3s ease; }
+.pinyin-input.wrong { border-color: #ff4757; animation: shake 0.3s ease; }
+
+.action-buttons {
+  display: flex; justify-content: center; gap: 10px; margin: 10px 0;
+}
+.action-btn {
+  border: none; border-radius: 16px; padding: 10px 28px;
+  font-size: 1.05em; font-weight: bold; cursor: pointer;
+  transition: all 0.2s; font-family: inherit;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+.action-btn:hover { transform: translateY(-1px); }
+.action-btn:active { transform: translateY(0); }
+.action-btn.primary { background: linear-gradient(135deg, #6c5ce7, #a55eea); color: white; }
+.action-btn.success { background: linear-gradient(135deg, #2ed573, #26de81); color: white; }
+.action-btn.skip { background: linear-gradient(135deg, #dfe6e9, #b2bec3); color: #555; }
+
+.feedback {
+  text-align: center; font-size: 1.35em; font-weight: bold;
+  min-height: 36px; display: flex; align-items: center;
+  justify-content: center; gap: 6px;
+}
+.feedback.great { color: #2ed573; }
+.feedback.try-again { color: #ff6348; }
+.feedback.hint { color: #ffa502; }
+
+.help-tip {
+  background: rgba(255,255,255,0.6); border-radius: 12px;
+  padding: 8px 14px; margin-top: 8px; text-align: center;
+  font-size: 0.9em; color: #888; border: 1px dashed #ddd;
+}
+.help-tip strong { color: #6c5ce7; }
+
+.confetti-piece {
+  position: fixed; width: 8px; height: 8px;
+  border-radius: 2px; z-index: 999;
+  animation: confetti-fall linear forwards; pointer-events: none;
+}
+
+.welcome-screen { text-align: center; padding: 30px 16px; }
+.welcome-screen h2 { font-size: 1.6em; color: #6c5ce7; margin: 10px 0; }
+.welcome-screen p { font-size: 1em; color: #666; margin: 6px 0; line-height: 1.5; }
+.start-btn {
+  margin-top: 18px; border: none; border-radius: 26px;
+  padding: 14px 40px; font-size: 1.3em; font-weight: bold;
+  background: linear-gradient(135deg, #6c5ce7, #a55eea);
+  color: white; cursor: pointer; font-family: inherit;
+  box-shadow: 0 6px 20px rgba(108,92,231,0.3);
+  transition: all 0.3s; animation: float 2s ease-in-out infinite;
+}
+.start-btn:hover { transform: translateY(-2px) scale(1.04); }
+
+.reward-modal {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.45); z-index: 1000;
+  display: none; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.reward-modal.show { display: flex; }
+.reward-content {
+  background: white; border-radius: 24px; padding: 28px;
+  text-align: center; max-width: 380px; width: 90%;
+  animation: bounceIn 0.5s ease-out;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+}
+.reward-content h2 { font-size: 1.6em; margin: 8px 0; }
+.reward-content .reward-emoji { font-size: 60px; }
+.reward-content p { font-size: 1em; color: #666; margin: 6px 0; }
+.reward-content button {
+  margin-top: 12px; border: none; border-radius: 20px;
+  padding: 10px 32px; font-size: 1.1em; font-weight: bold;
+  background: linear-gradient(135deg, #6c5ce7, #a55eea);
+  color: white; cursor: pointer; font-family: inherit;
+}
+
+.break-modal {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5); z-index: 1001;
+  display: none; align-items: center; justify-content: center;
+  backdrop-filter: blur(6px);
+}
+.break-modal.show { display: flex; }
+.break-content {
+  background: white; border-radius: 24px; padding: 30px;
+  text-align: center; max-width: 380px; width: 90%;
+  animation: bounceIn 0.5s ease-out;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+}
+.break-content .break-emoji { font-size: 60px; margin-bottom: 6px; }
+.break-content h2 { font-size: 1.5em; color: #e17055; margin: 6px 0; }
+.break-content p { font-size: 1em; color: #666; margin: 8px 0; line-height: 1.5; }
+.break-content button {
+  margin-top: 10px; border: none; border-radius: 20px;
+  padding: 10px 32px; font-size: 1.1em; font-weight: bold;
+  background: linear-gradient(135deg, #2ed573, #26de81);
+  color: white; cursor: pointer; font-family: inherit;
+  box-shadow: 0 4px 12px rgba(46,213,115,0.3);
+}
+
+@media (max-width: 700px) {
+  .main-content { flex-direction: column; align-items: center; }
+  .game-title { font-size: 1.8em; }
+  .chinese-word { font-size: 2em; }
+  .scene-emoji { font-size: 44px; }
+  .cat-btn { padding: 5px 10px; font-size: 0.8em; }
+}
+</style>
+</head>
+<body>
+
+<div class="scene-bg">
+  <div class="cloud"></div>
+  <div class="cloud"></div>
+  <div class="sun"></div>
+  <div class="ground"></div>
+  <div class="flower" style="left:5%; animation-delay:-0.5s;">🌻</div>
+  <div class="flower" style="left:15%; animation-delay:-1s;">🌷</div>
+  <div class="flower" style="left:82%; animation-delay:-1.5s;">🌸</div>
+  <div class="flower" style="left:92%; animation-delay:-2s;">🌺</div>
+  <div class="tree" style="left:1%;">🌳</div>
+  <div class="tree" style="right:1%;">🌲</div>
+  <div class="butterfly" style="top:20%; left:18%; animation-delay:-0.5s;">🦋</div>
+  <div class="butterfly" style="top:28%; right:12%; animation-delay:-1.2s;">🦋</div>
+</div>
+
+<div class="container">
+  <div class="game-header">
+    <div class="game-title">🌈 拼音小达人 🌈</div>
+    <div class="game-subtitle">边玩边学，快乐成长！</div>
+  </div>
+
+  <div id="welcomeScreen" class="game-card welcome-screen">
+    <div style="font-size:64px; margin-bottom:6px;">🎮</div>
+    <h2>欢迎来到拼音乐园！</h2>
+    <p>🎯 看汉字，输入正确的拼音<br>🔊 点击小喇叭听发音<br>🏆 连续答对获得奖励<br>📚 学习中文、拼音和英语</p>
+    <button class="start-btn" onclick="startGame()">🚀 开始冒险</button>
+  </div>
+
+  <div id="gameArea" style="display:none;">
+    <div class="top-bar">
+      <div class="stats-bar">
+        <div class="stat-item">⭐ <span id="score">0</span></div>
+        <div class="stat-item">✅ <span id="correctCount">0</span></div>
+        <div class="stat-item">📝 <span id="questionNum">0</span>/<span id="totalNum">0</span></div>
+        <div class="stat-item" id="streakItem" style="display:none;">🔥 <span id="streak">0</span></div>
+      </div>
+      <div class="timer-display" id="timerDisplay">⏱️ <span id="timerText">00:00</span></div>
+    </div>
+
+    <div class="category-bar" id="categoryBar"></div>
+
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+
+    <div class="game-card" id="questionCard">
+      <div class="main-content">
+        <div class="scene-side">
+          <div class="scene-container" id="sceneContainer">
+            <span class="scene-emoji" id="sceneEmoji"></span>
+            <div class="scene-label" id="sceneLabel"></div>
+          </div>
+        </div>
+
+        <div class="word-side">
+          <div class="word-row">
+            <span class="chinese-word" id="chineseWord"></span>
+            <button class="sound-btn-inline cn-btn" onclick="speakChinese()" title="听中文发音">🔊</button>
+            <span class="pinyin-hint" id="pinyinHint" style="visibility:hidden;"></span>
+          </div>
+
+          <div class="en-row">
+            <span class="english-trans" id="englishTrans"></span>
+            <button class="sound-btn-inline en-btn" onclick="speakEnglish()" title="Listen in English">🔊</button>
+          </div>
+
+          <div class="sentence-box" id="sentenceBox" style="display:none;">
+            <div class="sentence-cn" id="sentenceCn"></div>
+            <div class="sentence-en-row">
+              <span class="sentence-en" id="sentenceEn"></span>
+              <button class="speak-mini active-speed" onclick="speakSentenceEn('slow')" title="慢速朗读">🐢 慢速</button>
+              <button class="speak-mini" onclick="speakSentenceEn('normal')" title="正常语速">🐇 正常</button>
+            </div>
+          </div>
+
+          <div class="char-slots" id="charSlots"></div>
+        </div>
+      </div>
+
+      <div class="input-row">
+        <label>👇 输入拼音：</label>
+        <input type="text" class="pinyin-input" id="pinyinInput" placeholder="用空格分隔..."
+               autocomplete="off" autocapitalize="off" spellcheck="false">
+      </div>
+
+      <div class="feedback" id="feedback"></div>
+
+      <div class="action-buttons">
+        <button class="action-btn primary" onclick="checkAnswer()">✅ 确认</button>
+        <button class="action-btn skip" onclick="showHint()">💡 提示</button>
+        <button class="action-btn success" onclick="nextQuestion()">➡️ 下一题</button>
+      </div>
+
+      <div class="help-tip">
+        <strong>小贴士：</strong>不需要声调！如"你好"输入 <strong>ni hao</strong> ✨
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="reward-modal" id="rewardModal">
+  <div class="reward-content">
+    <div class="reward-emoji" id="rewardEmoji">🏆</div>
+    <h2 id="rewardTitle">太棒了！</h2>
+    <p id="rewardText">你真是拼音小天才！</p>
+    <p id="rewardStats"></p>
+    <button onclick="closeReward()">🎉 继续挑战</button>
+  </div>
+</div>
+
+<div class="break-modal" id="breakModal">
+  <div class="break-content">
+    <div class="break-emoji">😌</div>
+    <h2>休息一下吧！</h2>
+    <p>你已经学习了 <strong id="breakMinutes">10</strong> 分钟啦！<br>
+    站起来活动活动，让眼睛休息一下 👀<br>
+    喝点水，做做操，然后继续加油！💪</p>
+    <button onclick="dismissBreak()">✅ 我休息好了，继续！</button>
+  </div>
+</div>
+
+<script>
+const WORD_DATA = {
+  animals: {
+    name: '🐾 动物',
+    color: '#ff6b6b',
+    sceneGradient: 'linear-gradient(135deg, #a8e063, #56ab2f)',
+    items: [
+      { cn: '猫', pinyin: 'māo', pinyinPlain: 'mao', en: 'cat', emoji: '🐱', scene: '小猫在阳光下打盹', sentence: '小猫咪在沙发上睡觉。', sentenceEn: 'The kitten is sleeping on the sofa.' },
+      { cn: '狗', pinyin: 'gǒu', pinyinPlain: 'gou', en: 'dog', emoji: '🐶', scene: '小狗在草地上奔跑', sentence: '小狗摇着尾巴跑过来。', sentenceEn: 'The puppy runs over wagging its tail.' },
+      { cn: '兔子', pinyin: 'tù zi', pinyinPlain: 'tu zi', en: 'rabbit', emoji: '🐰', scene: '兔子在花园里跳', sentence: '小白兔在吃胡萝卜。', sentenceEn: 'The little white rabbit is eating a carrot.' },
+      { cn: '熊猫', pinyin: 'xióng māo', pinyinPlain: 'xiong mao', en: 'panda', emoji: '🐼', scene: '熊猫在竹林中吃竹子', sentence: '大熊猫是中国的国宝。', sentenceEn: 'The giant panda is China\'s national treasure.' },
+      { cn: '小鸟', pinyin: 'xiǎo niǎo', pinyinPlain: 'xiao niao', en: 'bird', emoji: '🐦', scene: '小鸟在树上唱歌', sentence: '小鸟在枝头唱着歌。', sentenceEn: 'The little bird sings on the branch.' },
+      { cn: '鱼', pinyin: 'yú', pinyinPlain: 'yu', en: 'fish', emoji: '🐟', scene: '鱼在清澈的水里游', sentence: '小鱼在水里快乐地游。', sentenceEn: 'The little fish swims happily in the water.' },
+      { cn: '大象', pinyin: 'dà xiàng', pinyinPlain: 'da xiang', en: 'elephant', emoji: '🐘', scene: '大象在河边喝水', sentence: '大象用鼻子喷水玩。', sentenceEn: 'The elephant sprays water with its trunk to play.' },
+      { cn: '老虎', pinyin: 'lǎo hǔ', pinyinPlain: 'lao hu', en: 'tiger', emoji: '🐯', scene: '老虎在森林中漫步', sentence: '老虎是森林之王。', sentenceEn: 'The tiger is the king of the forest.' },
+      { cn: '蝴蝶', pinyin: 'hú dié', pinyinPlain: 'hu die', en: 'butterfly', emoji: '🦋', scene: '蝴蝶在花丛中飞舞', sentence: '美丽的蝴蝶在花间飞。', sentenceEn: 'Beautiful butterflies fly among the flowers.' },
+      { cn: '青蛙', pinyin: 'qīng wā', pinyinPlain: 'qing wa', en: 'frog', emoji: '🐸', scene: '青蛙在荷叶上唱歌', sentence: '青蛙在池塘里呱呱叫。', sentenceEn: 'The frog croaks in the pond.' },
+    ]
+  },
+  fruits: {
+    name: '🍎 水果',
+    color: '#ffa502',
+    sceneGradient: 'linear-gradient(135deg, #f7971e, #ffd200)',
+    items: [
+      { cn: '苹果', pinyin: 'píng guǒ', pinyinPlain: 'ping guo', en: 'apple', emoji: '🍎', scene: '树上挂满了红苹果', sentence: '我最喜欢吃苹果。', sentenceEn: 'I like eating apples the most.' },
+      { cn: '香蕉', pinyin: 'xiāng jiāo', pinyinPlain: 'xiang jiao', en: 'banana', emoji: '🍌', scene: '猴子抱着一串香蕉', sentence: '黄色的香蕉弯弯的。', sentenceEn: 'The yellow banana is curved.' },
+      { cn: '草莓', pinyin: 'cǎo méi', pinyinPlain: 'cao mei', en: 'strawberry', emoji: '🍓', scene: '田里长满了草莓', sentence: '草莓又甜又好吃。', sentenceEn: 'Strawberries are sweet and delicious.' },
+      { cn: '西瓜', pinyin: 'xī guā', pinyinPlain: 'xi gua', en: 'watermelon', emoji: '🍉', scene: '夏天吃冰凉的西瓜', sentence: '夏天吃西瓜最凉快。', sentenceEn: 'Eating watermelon in summer is the coolest.' },
+      { cn: '葡萄', pinyin: 'pú tao', pinyinPlain: 'pu tao', en: 'grape', emoji: '🍇', scene: '葡萄架上一串串紫葡萄', sentence: '紫色的葡萄挂满了架子。', sentenceEn: 'Purple grapes hang all over the trellis.' },
+      { cn: '桃子', pinyin: 'táo zi', pinyinPlain: 'tao zi', en: 'peach', emoji: '🍑', scene: '桃园里粉红色的桃子', sentence: '桃子粉粉的真好看。', sentenceEn: 'The pink peach looks beautiful.' },
+      { cn: '橙子', pinyin: 'chéng zi', pinyinPlain: 'cheng zi', en: 'orange', emoji: '🍊', scene: '树上结满了橙子', sentence: '橙子的汁水很多。', sentenceEn: 'Oranges are very juicy.' },
+      { cn: '梨', pinyin: 'lí', pinyinPlain: 'li', en: 'pear', emoji: '🍐', scene: '秋天的梨园硕果累累', sentence: '秋天的梨子甜甜的。', sentenceEn: 'Autumn pears are sweet.' },
+    ]
+  },
+  nature: {
+    name: '🌿 自然',
+    color: '#2ed573',
+    sceneGradient: 'linear-gradient(135deg, #11998e, #38ef7d)',
+    items: [
+      { cn: '太阳', pinyin: 'tài yáng', pinyinPlain: 'tai yang', en: 'sun', emoji: '☀️', scene: '金色的太阳高挂天空', sentence: '太阳公公笑眯眯。', sentenceEn: 'The sun is smiling brightly.' },
+      { cn: '月亮', pinyin: 'yuè liang', pinyinPlain: 'yue liang', en: 'moon', emoji: '🌙', scene: '弯弯的月亮挂在夜空', sentence: '弯弯的月亮像小船。', sentenceEn: 'The crescent moon looks like a little boat.' },
+      { cn: '星星', pinyin: 'xīng xing', pinyinPlain: 'xing xing', en: 'star', emoji: '⭐', scene: '满天的星星闪闪发光', sentence: '一闪一闪亮晶晶。', sentenceEn: 'Twinkle, twinkle, little star.' },
+      { cn: '花', pinyin: 'huā', pinyinPlain: 'hua', en: 'flower', emoji: '🌸', scene: '公园里百花盛开', sentence: '春天的花儿真美丽。', sentenceEn: 'The spring flowers are truly beautiful.' },
+      { cn: '大树', pinyin: 'dà shù', pinyinPlain: 'da shu', en: 'big tree', emoji: '🌳', scene: '大树为小朋友遮阳', sentence: '大树给我们阴凉。', sentenceEn: 'The big tree gives us shade.' },
+      { cn: '下雨', pinyin: 'xià yǔ', pinyinPlain: 'xia yu', en: 'rain', emoji: '🌧️', scene: '天空下起了小雨', sentence: '下雨了，记得带伞。', sentenceEn: 'It\'s raining, remember to bring an umbrella.' },
+      { cn: '彩虹', pinyin: 'cǎi hóng', pinyinPlain: 'cai hong', en: 'rainbow', emoji: '🌈', scene: '雨后天空出现了彩虹', sentence: '雨后的彩虹七种颜色。', sentenceEn: 'The rainbow after rain has seven colors.' },
+      { cn: '云', pinyin: 'yún', pinyinPlain: 'yun', en: 'cloud', emoji: '☁️', scene: '白云在蓝天上飘', sentence: '白白的云朵像棉花糖。', sentenceEn: 'The white clouds look like cotton candy.' },
+    ]
+  },
+  food: {
+    name: '🍕 食物',
+    color: '#e67e22',
+    sceneGradient: 'linear-gradient(135deg, #f093fb, #f5576c)',
+    items: [
+      { cn: '米饭', pinyin: 'mǐ fàn', pinyinPlain: 'mi fan', en: 'rice', emoji: '🍚', scene: '一碗热腾腾的白米饭', sentence: '妈妈做的米饭真香。', sentenceEn: 'The rice mom made smells great.' },
+      { cn: '面条', pinyin: 'miàn tiáo', pinyinPlain: 'mian tiao', en: 'noodles', emoji: '🍜', scene: '一碗热气腾腾的面条', sentence: '生日要吃长寿面。', sentenceEn: 'We eat longevity noodles on birthdays.' },
+      { cn: '饺子', pinyin: 'jiǎo zi', pinyinPlain: 'jiao zi', en: 'dumplings', emoji: '🥟', scene: '全家一起包饺子', sentence: '过年了，我们包饺子。', sentenceEn: 'It\'s New Year, we make dumplings.' },
+      { cn: '蛋糕', pinyin: 'dàn gāo', pinyinPlain: 'dan gao', en: 'cake', emoji: '🎂', scene: '生日派对上的蛋糕', sentence: '生日快乐！吃蛋糕！', sentenceEn: 'Happy birthday! Let\'s eat cake!' },
+      { cn: '牛奶', pinyin: 'niú nǎi', pinyinPlain: 'niu nai', en: 'milk', emoji: '🥛', scene: '早上喝一杯温牛奶', sentence: '每天早上喝牛奶长高高。', sentenceEn: 'Drink milk every morning to grow tall.' },
+      { cn: '冰淇淋', pinyin: 'bīng qí lín', pinyinPlain: 'bing qi lin', en: 'ice cream', emoji: '🍦', scene: '夏天吃冰淇淋好开心', sentence: '我想吃草莓冰淇淋！', sentenceEn: 'I want to eat strawberry ice cream!' },
+      { cn: '包子', pinyin: 'bāo zi', pinyinPlain: 'bao zi', en: 'steamed bun', emoji: '🥖', scene: '热乎乎的肉包子', sentence: '早饭吃了两个包子。', sentenceEn: 'I ate two steamed buns for breakfast.' },
+      { cn: '鸡蛋', pinyin: 'jī dàn', pinyinPlain: 'ji dan', en: 'egg', emoji: '🥚', scene: '母鸡下了一个蛋', sentence: '鸡蛋营养又好吃。', sentenceEn: 'Eggs are nutritious and delicious.' },
+    ]
+  },
+  daily: {
+    name: '💬 日常',
+    color: '#6c5ce7',
+    sceneGradient: 'linear-gradient(135deg, #667eea, #764ba2)',
+    items: [
+      { cn: '你好', pinyin: 'nǐ hǎo', pinyinPlain: 'ni hao', en: 'hello', emoji: '👋', scene: '小朋友们互相打招呼', sentence: '你好！今天过得好吗？', sentenceEn: 'Hello! How are you today?' },
+      { cn: '谢谢', pinyin: 'xiè xie', pinyinPlain: 'xie xie', en: 'thank you', emoji: '🙏', scene: '收到礼物说谢谢', sentence: '谢谢你帮助我！', sentenceEn: 'Thank you for helping me!' },
+      { cn: '再见', pinyin: 'zài jiàn', pinyinPlain: 'zai jian', en: 'goodbye', emoji: '👋', scene: '放学和朋友说再见', sentence: '明天见！再见！', sentenceEn: 'See you tomorrow! Goodbye!' },
+      { cn: '爸爸', pinyin: 'bà ba', pinyinPlain: 'ba ba', en: 'dad', emoji: '👨', scene: '爸爸带我去公园', sentence: '我爱我的爸爸。', sentenceEn: 'I love my dad.' },
+      { cn: '妈妈', pinyin: 'mā ma', pinyinPlain: 'ma ma', en: 'mom', emoji: '👩', scene: '妈妈给我讲故事', sentence: '妈妈做的饭最好吃。', sentenceEn: 'Mom\'s cooking is the best.' },
+      { cn: '学校', pinyin: 'xué xiào', pinyinPlain: 'xue xiao', en: 'school', emoji: '🏫', scene: '我们的学校很漂亮', sentence: '我每天都去学校。', sentenceEn: 'I go to school every day.' },
+      { cn: '朋友', pinyin: 'péng you', pinyinPlain: 'peng you', en: 'friend', emoji: '👫', scene: '好朋友一起玩耍', sentence: '我和朋友一起玩。', sentenceEn: 'I play with my friends.' },
+      { cn: '快乐', pinyin: 'kuài lè', pinyinPlain: 'kuai le', en: 'happy', emoji: '😊', scene: '开心快乐的每一天', sentence: '每天都要快快乐乐的。', sentenceEn: 'Be happy every day.' },
+      { cn: '读书', pinyin: 'dú shū', pinyinPlain: 'du shu', en: 'read', emoji: '📖', scene: '坐在窗边看书', sentence: '我喜欢读有趣的书。', sentenceEn: 'I like to read interesting books.' },
+      { cn: '画画', pinyin: 'huà huà', pinyinPlain: 'hua hua', en: 'draw', emoji: '🎨', scene: '小朋友在画美丽的画', sentence: '我画了一幅漂亮的画。', sentenceEn: 'I drew a beautiful picture.' },
+    ]
+  },
+  colors: {
+    name: '🎨 颜色',
+    color: '#e84393',
+    sceneGradient: 'linear-gradient(135deg, #ee5a6f, #f09819)',
+    items: [
+      { cn: '红色', pinyin: 'hóng sè', pinyinPlain: 'hong se', en: 'red', emoji: '❤️', scene: '红红的灯笼高高挂', sentence: '红色代表喜庆和热情。', sentenceEn: 'Red represents joy and passion.' },
+      { cn: '蓝色', pinyin: 'lán sè', pinyinPlain: 'lan se', en: 'blue', emoji: '💙', scene: '蓝蓝的天空真美', sentence: '大海和天空都是蓝色。', sentenceEn: 'The sea and sky are both blue.' },
+      { cn: '绿色', pinyin: 'lǜ sè', pinyinPlain: 'lv se', en: 'green', emoji: '💚', scene: '绿油油的草地', sentence: '春天小草变成绿色。', sentenceEn: 'The grass turns green in spring.' },
+      { cn: '黄色', pinyin: 'huáng sè', pinyinPlain: 'huang se', en: 'yellow', emoji: '💛', scene: '金灿灿的向日葵', sentence: '向日葵是金黄色的。', sentenceEn: 'Sunflowers are golden yellow.' },
+      { cn: '白色', pinyin: 'bái sè', pinyinPlain: 'bai se', en: 'white', emoji: '🤍', scene: '白雪覆盖了大地', sentence: '冬天的雪是白色的。', sentenceEn: 'Winter snow is white.' },
+      { cn: '黑色', pinyin: 'hēi sè', pinyinPlain: 'hei se', en: 'black', emoji: '🖤', scene: '夜晚天空是黑色的', sentence: '小猫的眼睛黑亮黑亮。', sentenceEn: 'The kitten\'s eyes are black and shiny.' },
+      { cn: '粉色', pinyin: 'fěn sè', pinyinPlain: 'fen se', en: 'pink', emoji: '💗', scene: '粉粉的樱花飘落', sentence: '我喜欢粉色的裙子。', sentenceEn: 'I like the pink dress.' },
+      { cn: '紫色', pinyin: 'zǐ sè', pinyinPlain: 'zi se', en: 'purple', emoji: '💜', scene: '薰衣草田一片紫色', sentence: '紫色的葡萄又大又甜。', sentenceEn: 'Purple grapes are big and sweet.' },
+    ]
+  }
+};
+
+const PRAISE = ['太棒了！👏', '真厉害！🌟', '你真聪明！🧠', '完美！💯', '了不起！🎉', '太优秀了！✨', '好极了！🏆', '真是天才！🌈'];
+const ENCOURAGE = ['加油，再试一次！💪', '别灰心，你可以的！🌟', '差一点点了！👍', '再想想看～🤔'];
+
+let state = {
+  score: 0, correct: 0, total: 0, streak: 0, maxStreak: 0,
+  currentCategory: 'animals', currentItem: null,
+  questionIndex: 0, questions: [],
+  hintUsed: false, answered: false, roundSize: 8
+};
+
+let timerSeconds = 0;
+let timerInterval = null;
+let lastBreakAt = 0;
+const BREAK_INTERVAL = 600; // 10 minutes
+
+let enKidVoice = null;
+
+function findKidFriendlyVoice() {
+  const voices = speechSynthesis.getVoices();
+  const auNames = [
+    'Karen (Enhanced)', 'Karen (Premium)', 'Karen',
+    'Lee (Enhanced)', 'Lee (Premium)', 'Lee',
+    'Gordon (Enhanced)', 'Gordon (Premium)', 'Gordon',
+    'Catherine (Enhanced)', 'Catherine',
+  ];
+  for (const name of auNames) {
+    const v = voices.find(v => v.name === name && v.lang === 'en-AU');
+    if (v) return v;
+  }
+  const anyAU = voices.find(v => v.lang === 'en-AU');
+  if (anyAU) return anyAU;
+  const reedMatch = voices.find(v => /reed/i.test(v.name) && v.lang.startsWith('en'));
+  if (reedMatch) return reedMatch;
+  return voices.find(v => v.lang === 'en-US') || voices.find(v => v.lang.startsWith('en')) || null;
+}
+
+function initVoices() {
+  enKidVoice = findKidFriendlyVoice();
+}
+speechSynthesis.addEventListener('voiceschanged', initVoices);
+setTimeout(initVoices, 100);
+setTimeout(initVoices, 500);
+initVoices();
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+function startTimer() {
+  timerSeconds = 0;
+  lastBreakAt = 0;
+  updateTimerDisplay();
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timerSeconds++;
+    updateTimerDisplay();
+    const elapsed = timerSeconds - lastBreakAt;
+    if (elapsed >= BREAK_INTERVAL) {
+      lastBreakAt = timerSeconds;
+      showBreakReminder();
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(timerSeconds / 60);
+  const s = timerSeconds % 60;
+  document.getElementById('timerText').textContent =
+    String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+  const el = document.getElementById('timerDisplay');
+  const sinceBreak = timerSeconds - lastBreakAt;
+  if (sinceBreak >= BREAK_INTERVAL - 30 && sinceBreak < BREAK_INTERVAL) {
+    el.classList.add('warning');
+  } else {
+    el.classList.remove('warning');
+  }
+}
+
+function showBreakReminder() {
+  const modal = document.getElementById('breakModal');
+  document.getElementById('breakMinutes').textContent = Math.floor(timerSeconds / 60);
+  modal.classList.add('show');
+}
+
+function dismissBreak() {
+  document.getElementById('breakModal').classList.remove('show');
+}
+
+function startGame() {
+  document.getElementById('welcomeScreen').style.display = 'none';
+  document.getElementById('gameArea').style.display = 'block';
+  buildCategoryBar();
+  startTimer();
+  loadRound();
+}
+
+function buildCategoryBar() {
+  const bar = document.getElementById('categoryBar');
+  bar.innerHTML = '';
+  for (const [key, cat] of Object.entries(WORD_DATA)) {
+    const btn = document.createElement('button');
+    btn.className = 'cat-btn' + (key === state.currentCategory ? ' active' : '');
+    btn.style.background = key === state.currentCategory ? cat.color : 'rgba(255,255,255,0.8)';
+    btn.style.color = key === state.currentCategory ? 'white' : '#333';
+    btn.textContent = cat.name;
+    btn.onclick = () => switchCategory(key);
+    bar.appendChild(btn);
+  }
+}
+
+function switchCategory(key) {
+  state.currentCategory = key;
+  buildCategoryBar();
+  loadRound();
+}
+
+function loadRound() {
+  const cat = WORD_DATA[state.currentCategory];
+  state.questions = shuffle(cat.items).slice(0, state.roundSize);
+  state.questionIndex = 0;
+  state.total = state.questions.length;
+  updateStats();
+  showQuestion();
+}
+
+function showQuestion() {
+  const item = state.questions[state.questionIndex];
+  if (!item) { showRoundComplete(); return; }
+  state.currentItem = item;
+  state.hintUsed = false;
+  state.answered = false;
+
+  const cat = WORD_DATA[state.currentCategory];
+  document.getElementById('sceneContainer').style.background = cat.sceneGradient;
+  document.getElementById('sceneEmoji').textContent = item.emoji;
+  document.getElementById('sceneLabel').textContent = item.scene;
+  document.getElementById('chineseWord').textContent = item.cn;
+  document.getElementById('pinyinHint').textContent = item.pinyin;
+  document.getElementById('pinyinHint').style.visibility = 'hidden';
+  document.getElementById('englishTrans').textContent = '🇬🇧 ' + item.en;
+
+  if (item.sentence) {
+    document.getElementById('sentenceBox').style.display = 'block';
+    document.getElementById('sentenceCn').textContent = '📖 ' + item.sentence;
+    buildClickableWords(item.sentenceEn);
+  } else {
+    document.getElementById('sentenceBox').style.display = 'none';
+  }
+
+  buildCharSlots(item.pinyinPlain);
+
+  const input = document.getElementById('pinyinInput');
+  input.value = '';
+  input.className = 'pinyin-input';
+  input.focus();
+  document.getElementById('feedback').innerHTML = '';
+  document.getElementById('feedback').className = 'feedback';
+
+  updateStats();
+  document.getElementById('questionCard').style.animation = 'none';
+  requestAnimationFrame(() => { document.getElementById('questionCard').style.animation = 'slideUp 0.35s ease-out'; });
+}
+
+function buildClickableWords(sentenceEn) {
+  const container = document.getElementById('sentenceEn');
+  container.innerHTML = '';
+  const LONG_THRESHOLD = 4;
+  const tokens = sentenceEn.match(/[\w']+|[^\w\s]+|\s+/g) || [];
+  tokens.forEach(token => {
+    const isWord = /^[\w']+$/.test(token);
+    if (isWord && token.length >= LONG_THRESHOLD) {
+      const span = document.createElement('span');
+      span.className = 'word-clickable';
+      span.textContent = token;
+      span.title = '点击听发音 / Click to hear';
+      span.onclick = (e) => {
+        e.stopPropagation();
+        speakSingleWord(token);
+        span.classList.add('speaking-word');
+        setTimeout(() => span.classList.remove('speaking-word'), 800);
+      };
+      container.appendChild(span);
+    } else {
+      container.appendChild(document.createTextNode(token));
+    }
+  });
+}
+
+function buildCharSlots(pinyinPlain) {
+  const slots = document.getElementById('charSlots');
+  slots.innerHTML = '';
+  pinyinPlain.split(' ').forEach(p => {
+    const slot = document.createElement('div');
+    slot.className = 'char-slot';
+    slot.textContent = '_';
+    slot.dataset.expected = p;
+    slots.appendChild(slot);
+  });
+}
+
+function updateCharSlots(userInput) {
+  const slots = document.getElementById('charSlots').children;
+  const parts = userInput.trim().split(/\s+/);
+  for (let i = 0; i < slots.length; i++) {
+    if (parts[i]) {
+      slots[i].textContent = parts[i];
+      slots[i].className = 'char-slot filled';
+      slots[i].classList.add(parts[i].toLowerCase() === slots[i].dataset.expected ? 'correct-char' : 'wrong-char');
+    } else {
+      slots[i].textContent = '_';
+      slots[i].className = 'char-slot';
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('pinyinInput');
+  input.addEventListener('input', () => updateCharSlots(input.value));
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') checkAnswer(); });
+});
+
+function normalize(s) {
+  return s.toLowerCase().replace(/ü/g, 'v').replace(/\s+/g, ' ').trim();
+}
+
+function checkAnswer() {
+  if (state.answered) { nextQuestion(); return; }
+  const input = document.getElementById('pinyinInput');
+  const userAnswer = normalize(input.value);
+  const correctAnswer = normalize(state.currentItem.pinyinPlain);
+  if (!userAnswer) { setFeedback('hint', '请输入拼音哦～ 🤗'); return; }
+
+  if (userAnswer === correctAnswer) {
+    state.answered = true;
+    const pts = state.hintUsed ? 5 : 10;
+    state.score += pts; state.correct++; state.streak++;
+    if (state.streak > state.maxStreak) state.maxStreak = state.streak;
+    input.className = 'pinyin-input correct';
+    document.getElementById('pinyinHint').style.visibility = 'visible';
+    setFeedback('great', PRAISE[Math.floor(Math.random() * PRAISE.length)] + ` +${pts}分`);
+    updateStats();
+    if (state.streak >= 3) { spawnConfetti(); document.getElementById('streakItem').style.display = 'flex'; }
+  } else {
+    input.className = 'pinyin-input wrong';
+    state.streak = 0;
+    setFeedback('try-again', ENCOURAGE[Math.floor(Math.random() * ENCOURAGE.length)]);
+    setTimeout(() => { input.className = 'pinyin-input'; }, 500);
+    updateStats();
+  }
+}
+
+function showHint() {
+  state.hintUsed = true;
+  document.getElementById('pinyinHint').style.visibility = 'visible';
+  setFeedback('hint', `提示：拼音是 "${state.currentItem.pinyin}" 💡`);
+  speakChinese();
+}
+
+function nextQuestion() {
+  state.questionIndex++;
+  if (state.questionIndex >= state.total) showRoundComplete();
+  else showQuestion();
+}
+
+function setFeedback(type, text) {
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback ' + type;
+  fb.innerHTML = text;
+  fb.style.animation = 'none';
+  requestAnimationFrame(() => { fb.style.animation = 'bounceIn 0.3s ease-out'; });
+}
+
+function updateStats() {
+  document.getElementById('score').textContent = state.score;
+  document.getElementById('correctCount').textContent = state.correct;
+  document.getElementById('questionNum').textContent = state.questionIndex + 1;
+  document.getElementById('totalNum').textContent = state.total;
+  document.getElementById('streak').textContent = state.streak;
+  const pct = state.total > 0 ? (state.questionIndex / state.total * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
+function speakChinese() {
+  speakText(state.currentItem.cn, 'zh-CN', 0.85);
+  animateBtn('.sound-btn-inline.cn-btn');
+}
+
+function speakEnglish() {
+  speakEnglishWord(state.currentItem.en);
+  animateBtn('.sound-btn-inline.en-btn');
+}
+
+function speakSentenceEn(speed) {
+  const rate = speed === 'normal' ? 0.82 : 0.55;
+  speakEnKid(state.currentItem.sentenceEn, rate, 1.2);
+  document.querySelectorAll('.sentence-en-row .speak-mini').forEach(b => b.classList.remove('active-speed'));
+  const idx = speed === 'normal' ? 1 : 0;
+  const btns = document.querySelectorAll('.sentence-en-row .speak-mini');
+  if (btns[idx]) btns[idx].classList.add('active-speed');
+}
+
+function speakEnglishWord(text) {
+  speakEnKid(text, 0.7, 1.2);
+}
+
+function speakSingleWord(word) {
+  speakEnKid(word, 0.6, 1.2);
+}
+
+function speakEnKid(text, rate, pitch) {
+  if (!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = enKidVoice && enKidVoice.lang === 'en-AU' ? 'en-AU' : 'en-US';
+  u.rate = rate;
+  u.pitch = pitch;
+  u.volume = 1;
+  if (enKidVoice) u.voice = enKidVoice;
+  speechSynthesis.speak(u);
+}
+
+function speakText(text, lang, rate = 1) {
+  if (!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang; u.rate = rate; u.pitch = 1.1;
+  const voices = speechSynthesis.getVoices();
+  const v = voices.find(v => v.lang.startsWith(lang.split('-')[0]));
+  if (v) u.voice = v;
+  speechSynthesis.speak(u);
+}
+
+function animateBtn(sel) {
+  const btn = document.querySelector(sel);
+  if (!btn) return;
+  btn.classList.add('speaking');
+  setTimeout(() => btn.classList.remove('speaking'), 400);
+}
+
+function spawnConfetti() {
+  const colors = ['#ff6b6b', '#ffa502', '#2ed573', '#1e90ff', '#a55eea', '#fd79a8', '#fdcb6e'];
+  for (let i = 0; i < 35; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.width = (5 + Math.random() * 7) + 'px';
+    p.style.height = (5 + Math.random() * 7) + 'px';
+    p.style.animationDuration = (2 + Math.random() * 2) + 's';
+    p.style.animationDelay = (Math.random() * 0.4) + 's';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 4000);
+  }
+}
+
+function showRoundComplete() {
+  const modal = document.getElementById('rewardModal');
+  const accuracy = state.total > 0 ? Math.round(state.correct / state.total * 100) : 0;
+  let emoji = '🏆', title = '太棒了！', text = '你是拼音小达人！';
+  if (accuracy >= 90) { emoji = '🌟'; title = '完美通关！'; text = '你简直是拼音天才！'; }
+  else if (accuracy >= 70) { emoji = '🎉'; title = '做得很好！'; text = '继续努力，越来越棒！'; }
+  else if (accuracy >= 50) { emoji = '💪'; title = '不错哦！'; text = '多多练习，你会更好！'; }
+  else { emoji = '🌱'; title = '继续加油！'; text = '每次进步一点点！'; }
+  document.getElementById('rewardEmoji').textContent = emoji;
+  document.getElementById('rewardTitle').textContent = title;
+  document.getElementById('rewardText').textContent = text;
+  document.getElementById('rewardStats').innerHTML =
+    `得分: <strong>${state.score}</strong> | 正确率: <strong>${accuracy}%</strong> | 最高连击: <strong>${state.maxStreak}</strong> 🔥`;
+  modal.classList.add('show');
+  spawnConfetti();
+}
+
+function closeReward() {
+  document.getElementById('rewardModal').classList.remove('show');
+  loadRound();
+}
+</script>
+</body>
+</html>
