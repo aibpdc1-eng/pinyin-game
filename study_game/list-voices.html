@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Voice List</title></head>
+<body>
+<h2>Browser Available Voices</h2>
+<pre id="out">Loading...</pre>
+<script>
+function show() {
+  const voices = speechSynthesis.getVoices();
+  const lines = voices.map(v => `${v.name}  |  ${v.lang}  |  local=${v.localService}`);
+  document.getElementById('out').textContent = lines.join('\n') || 'No voices found yet';
+}
+speechSynthesis.addEventListener('voiceschanged', show);
+setTimeout(show, 500);
+show();
+</script>
+</body></html>
