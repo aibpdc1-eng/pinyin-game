@@ -121,6 +121,7 @@ body {
 .mode-tag.multiply { background: #2ed573; }
 .mode-tag.divide { background: #ffa502; }
 .mode-tag.mixed { background: #a55eea; }
+.mode-tag.wrongbook { background: #ff4757; }
 
 .progress-bar {
   width: 100%; height: 10px; background: rgba(255,255,255,0.6);
@@ -250,6 +251,7 @@ body {
 .history-badge.multiply { background: #2ed573; }
 .history-badge.divide { background: #ffa502; }
 .history-badge.mixed { background: #a55eea; }
+.history-badge.wrongbook { background: #ff4757; }
 
 .history-detail-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -328,6 +330,11 @@ body {
         <div class="mode-name">混合运算</div>
         <div class="mode-desc">加减乘除随机</div>
       </div>
+      <div class="mode-card" data-mode="wrongbook" onclick="selectMode('wrongbook')">
+        <div class="mode-icon">📕</div>
+        <div class="mode-name">错题集</div>
+        <div class="mode-desc">专练做错的题</div>
+      </div>
     </div>
 
     <div class="settings-panel" id="settingsPanel">
@@ -341,6 +348,7 @@ body {
       <div class="action-btns">
         <button class="start-btn" onclick="startGame()">🚀 开始挑战！</button>
         <button class="history-btn" onclick="showHistory()">📊 记录</button>
+        <button class="history-btn" onclick="showWrongBook()">📕 错题集</button>
       </div>
     </div>
   </div>
@@ -401,6 +409,17 @@ body {
       <button class="clear-history-btn" onclick="clearHistory()">🗑 清空记录</button>
     </div>
   </div>
+
+  <!-- 错题集 -->
+  <div class="history-screen hidden" id="wrongBookScreen">
+    <h2>📕 错题集</h2>
+    <div class="history-list" id="wrongBookList"></div>
+    <div class="btn-group">
+      <button class="home-btn" onclick="goHome()">🏠 返回首页</button>
+      <button class="history-btn" onclick="startWrongBookGame()">📝 刷错题</button>
+      <button class="clear-history-btn" onclick="clearWrongBook()">🗑 清空错题集</button>
+    </div>
+  </div>
 </div>
 
 <div class="confetti hidden" id="confetti"></div>
@@ -408,6 +427,7 @@ body {
 <script>
 const TOTAL = 10;
 const STORAGE_KEY = 'math_game_history';
+const WRONGBOOK_KEY = 'math_game_wrongbook_v1';
 
 let gameMode = 'addsub';
 let difficulty = 'easy';
@@ -421,14 +441,15 @@ let transitioning = false;
 let currentWrongAttempts = 0;
 let questionStartTime = 0;
 
-const modeLabels = { addsub: '加减法', multiply: '乘法', divide: '除法', mixed: '混合运算' };
+const modeLabels = { addsub: '加减法', multiply: '乘法', divide: '除法', mixed: '混合运算', wrongbook: '错题集' };
 const diffLabels = { easy: '简单', medium: '中等', hard: '困难' };
 
 const diffHints = {
   addsub: { easy: '20以内加减', medium: '50以内加减', hard: '100以内加减' },
   multiply: { easy: '1~5的表', medium: '1~7的表', hard: '1~9的表' },
   divide: { easy: '1~5的表', medium: '1~7的表', hard: '1~9的表' },
-  mixed: { easy: '20以内 + 5以内表', medium: '50以内 + 7以内表', hard: '100以内 + 9以内表' }
+  mixed: { easy: '20以内 + 5以内表', medium: '50以内 + 7以内表', hard: '100以内 + 9以内表' },
+  wrongbook: { easy: '按错题出题', medium: '按错题出题', hard: '按错题出题' }
 };
 
 function initScene() {
@@ -477,6 +498,24 @@ function shuffle(arr) {
   return arr;
 }
 
+function loadWrongBook() {
+  try {
+    const raw = localStorage.getItem(WRONGBOOK_KEY);
+    const items = JSON.parse(raw || '[]');
+    return Array.isArray(items) ? items : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveWrongBook(items) {
+  localStorage.setItem(WRONGBOOK_KEY, JSON.stringify(items));
+}
+
+function wrongBookIdFromText(text, mode) {
+  return `${mode}|${text}`;
+}
+
 function genAddSub(diff) {
   const maxNum = diff === 'easy' ? 20 : diff === 'medium' ? 50 : 100;
   const pool = [];
@@ -484,11 +523,11 @@ function genAddSub(diff) {
     if (Math.random() < 0.5) {
       const a = randInt(1, maxNum - 1);
       const b = randInt(1, maxNum - a);
-      pool.push({ text: `${a} + ${b}`, display: `${a}<span class="op"> + </span>${b}`, answer: a + b });
+      pool.push({ mode: 'addsub', text: `${a} + ${b}`, display: `${a}<span class="op"> + </span>${b}`, answer: a + b });
     } else {
       const a = randInt(2, maxNum);
       const b = randInt(1, a - 1);
-      pool.push({ text: `${a} − ${b}`, display: `${a}<span class="op"> − </span>${b}`, answer: a - b });
+      pool.push({ mode: 'addsub', text: `${a} − ${b}`, display: `${a}<span class="op"> − </span>${b}`, answer: a - b });
     }
   }
   return shuffle(pool).slice(0, TOTAL);
@@ -499,8 +538,8 @@ function genMultiply(diff) {
   const pool = [];
   for (let a = 1; a <= max; a++) {
     for (let b = a; b <= 9; b++) {
-      pool.push({ text: `${a} × ${b}`, display: `${a}<span class="op"> × </span>${b}`, answer: a * b });
-      if (a !== b) pool.push({ text: `${b} × ${a}`, display: `${b}<span class="op"> × </span>${a}`, answer: a * b });
+      pool.push({ mode: 'multiply', text: `${a} × ${b}`, display: `${a}<span class="op"> × </span>${b}`, answer: a * b });
+      if (a !== b) pool.push({ mode: 'multiply', text: `${b} × ${a}`, display: `${b}<span class="op"> × </span>${a}`, answer: a * b });
     }
   }
   return shuffle(pool).slice(0, TOTAL);
@@ -511,8 +550,8 @@ function genDivide(diff) {
   const pool = [];
   for (let a = 1; a <= max; a++) {
     for (let b = a; b <= 9; b++) {
-      pool.push({ text: `${a * b} ÷ ${a}`, display: `${a * b}<span class="op"> ÷ </span>${a}`, answer: b });
-      if (a !== b) pool.push({ text: `${a * b} ÷ ${b}`, display: `${a * b}<span class="op"> ÷ </span>${b}`, answer: a });
+      pool.push({ mode: 'divide', text: `${a * b} ÷ ${a}`, display: `${a * b}<span class="op"> ÷ </span>${a}`, answer: b });
+      if (a !== b) pool.push({ mode: 'divide', text: `${a * b} ÷ ${b}`, display: `${a * b}<span class="op"> ÷ </span>${b}`, answer: a });
     }
   }
   return shuffle(pool).slice(0, TOTAL);
@@ -526,6 +565,52 @@ function genMixed(diff) {
   return shuffle(all).slice(0, TOTAL);
 }
 
+function formatQuestionDisplayFromText(text) {
+  return String(text)
+    .replace(' × ', '<span class="op"> × </span>')
+    .replace(' ÷ ', '<span class="op"> ÷ </span>')
+    .replace(' + ', '<span class="op"> + </span>')
+    .replace(' − ', '<span class="op"> − </span>');
+}
+
+function pickWrongBookQuestions(items) {
+  const now = Date.now();
+  const list = Array.isArray(items) ? items : [];
+  if (list.length === 0) return [];
+
+  function weightOf(i) {
+    const wrongGames = i.wrongGames || 0;
+    const wrongTotalAttempts = i.wrongTotalAttempts || 0;
+    const lastSeenAt = i.lastSeenAt || 0;
+    const days = lastSeenAt ? (now - lastSeenAt) / (1000 * 3600 * 24) : 999;
+    const freshnessBoost = Math.min(10, Math.max(0, days));
+    return 1 + wrongGames + 0.2 * wrongTotalAttempts + freshnessBoost;
+  }
+
+  function pickOneWeighted() {
+    const weights = list.map(weightOf);
+    const sum = weights.reduce((a, b) => a + b, 0);
+    let r = Math.random() * sum;
+    for (let idx = 0; idx < list.length; idx++) {
+      r -= weights[idx];
+      if (r <= 0) return list[idx];
+    }
+    return list[list.length - 1];
+  }
+
+  const picked = [];
+  for (let i = 0; i < TOTAL; i++) {
+    const it = pickOneWeighted();
+    picked.push({
+      mode: it.mode || 'mixed',
+      text: it.questionText,
+      display: formatQuestionDisplayFromText(it.questionText),
+      answer: it.answer
+    });
+  }
+  return picked;
+}
+
 function generateQuestions() {
   switch (gameMode) {
     case 'addsub': return genAddSub(difficulty);
@@ -536,7 +621,17 @@ function generateQuestions() {
 }
 
 function startGame() {
-  questions = generateQuestions();
+  if (gameMode === 'wrongbook') {
+    const items = loadWrongBook();
+    if (items.length === 0) {
+      alert('还没有错题哦～先去挑战一局吧！');
+      goHome();
+      return;
+    }
+    questions = pickWrongBookQuestions(items);
+  } else {
+    questions = generateQuestions();
+  }
   currentIndex = 0;
   correctTotal = 0;
   results = [];
@@ -545,6 +640,7 @@ function startGame() {
   document.getElementById('modeScreen').classList.add('hidden');
   document.getElementById('resultScreen').classList.add('hidden');
   document.getElementById('historyScreen').classList.add('hidden');
+  document.getElementById('wrongBookScreen').classList.add('hidden');
   document.getElementById('confetti').classList.add('hidden');
   document.getElementById('gameArea').classList.remove('hidden');
 
@@ -626,7 +722,14 @@ function handleCorrect(q) {
   fb.className = 'feedback correct-fb';
 
   const qTime = ((Date.now() - questionStartTime) / 1000).toFixed(1);
-  results.push({ question: q.text, correctAnswer: q.answer, wrongAttempts: currentWrongAttempts, time: qTime });
+  results.push({
+    question: q.text,
+    correctAnswer: q.answer,
+    wrongAttempts: currentWrongAttempts,
+    time: qTime,
+    mode: q.mode || gameMode,
+    sourceMode: gameMode
+  });
   document.getElementById('correctCount').textContent = correctTotal;
 
   setTimeout(() => {
@@ -660,6 +763,46 @@ function handleWrong(q) {
     transitioning = false;
     input.focus();
   }, 500);
+}
+
+function upsertWrongBookFromResults(results) {
+  const items = loadWrongBook();
+  const byId = new Map(items.map(i => [i.id, i]));
+  const now = Date.now();
+
+  results.forEach(r => {
+    if (!r || !r.question) return;
+    if (!r.wrongAttempts || r.wrongAttempts <= 0) return;
+
+    const mode = r.mode || 'mixed';
+    const id = wrongBookIdFromText(r.question, mode);
+    const existing = byId.get(id);
+
+    const next = existing || {
+      id,
+      questionText: r.question,
+      answer: r.correctAnswer,
+      mode,
+      sourceMode: r.sourceMode || mode,
+      wrongGames: 0,
+      wrongTotalAttempts: 0,
+      lastWrongAt: 0,
+      lastSeenAt: 0
+    };
+
+    next.questionText = r.question;
+    next.answer = r.correctAnswer;
+    next.mode = mode;
+    next.sourceMode = r.sourceMode || next.sourceMode || mode;
+    next.wrongGames += 1;
+    next.wrongTotalAttempts += r.wrongAttempts;
+    next.lastWrongAt = now;
+    next.lastSeenAt = now;
+
+    byId.set(id, next);
+  });
+
+  saveWrongBook(Array.from(byId.values()));
 }
 
 function endGame() {
@@ -697,6 +840,7 @@ function endGame() {
   });
 
   document.getElementById('progressFill').style.width = '100%';
+  upsertWrongBookFromResults(results);
   saveHistory(elapsed, acc);
 }
 
@@ -716,6 +860,63 @@ function saveHistory(elapsed, acc) {
   });
   if (history.length > 50) history.length = 50;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+}
+
+function showWrongBook() {
+  document.getElementById('modeScreen').classList.add('hidden');
+  document.getElementById('historyScreen').classList.add('hidden');
+  document.getElementById('resultScreen').classList.add('hidden');
+  document.getElementById('gameArea').classList.add('hidden');
+  document.getElementById('wrongBookScreen').classList.remove('hidden');
+
+  const items = loadWrongBook();
+  const listEl = document.getElementById('wrongBookList');
+  if (items.length === 0) {
+    listEl.innerHTML = '<div class="history-empty">还没有错题哦～<br>先去挑战一局吧！</div>';
+    return;
+  }
+
+  const sorted = [...items].sort((a, b) =>
+    (b.wrongGames || 0) - (a.wrongGames || 0) ||
+    (b.wrongTotalAttempts || 0) - (a.wrongTotalAttempts || 0) ||
+    (b.lastWrongAt || 0) - (a.lastWrongAt || 0)
+  );
+
+  listEl.innerHTML = '';
+  sorted.forEach(it => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    const last = it.lastWrongAt ? new Date(it.lastWrongAt).toLocaleString('zh-CN') : '-';
+    item.innerHTML = `
+      <div class="history-left">
+        <div class="history-date">最近错题：${last}</div>
+        <div class="history-info">
+          ${it.questionText} = ${it.answer}
+          <span class="history-badge ${it.mode || 'wrongbook'}">${modeLabels[it.mode] || it.mode || '错题'}</span>
+        </div>
+      </div>
+      <div class="history-right">
+        <div class="history-acc low">${it.wrongGames || 0}局</div>
+        <div class="history-time">错${it.wrongTotalAttempts || 0}次</div>
+      </div>`;
+    listEl.appendChild(item);
+  });
+}
+
+function clearWrongBook() {
+  if (confirm('确定要清空错题集吗？')) {
+    localStorage.removeItem(WRONGBOOK_KEY);
+    showWrongBook();
+  }
+}
+
+function startWrongBookGame() {
+  gameMode = 'wrongbook';
+  document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+  const card = document.querySelector('[data-mode="wrongbook"]');
+  if (card) card.classList.add('selected');
+  updateDiffHint();
+  startGame();
 }
 
 function showHistory() {
@@ -813,6 +1014,7 @@ function goHome() {
   document.getElementById('resultScreen').classList.add('hidden');
   document.getElementById('gameArea').classList.add('hidden');
   document.getElementById('historyScreen').classList.add('hidden');
+  document.getElementById('wrongBookScreen').classList.add('hidden');
   document.getElementById('modeScreen').classList.remove('hidden');
   clearInterval(timerInterval);
 }
@@ -822,3 +1024,4 @@ updateDiffHint();
 </script>
 </body>
 </html>
+
